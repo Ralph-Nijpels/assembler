@@ -8,7 +8,8 @@ import (
 // - Token ----------------------------------------------------------------------------------------------------------------------
 
 const (
-	TK_IDENTIFIER = iota
+	TK_UNKNOWN = iota
+	TK_IDENTIFIER
 	TK_INTEGER
 	TK_HEXADECIMAL
 	TK_FLOAT
@@ -28,6 +29,11 @@ type Token struct {
 func (thisToken Token) append(c rune) (nextToken Token) {
 	nextToken = thisToken
 	nextToken.value += string(c)
+	return
+}
+
+func NewToken() (token Token) {
+	token = Token{}
 	return
 }
 
@@ -296,7 +302,7 @@ func fraction(thisChar rune, thisToken Token) (state int, nextChar rune, nextTok
 }
 
 // nextToken reads the next token from the buffer, using a classic handcrafted state machine.
-func nextToken() (token string, err error) {
+func nextToken() (token Token, err error) {
 
 	stateTable := []State{
 		white_space,
@@ -312,10 +318,10 @@ func nextToken() (token string, err error) {
 		fraction}
 
 	state := 0
-	thisToken := Token{}
+	token = NewToken()
 	thisChar, _, err := sourceCode.ReadRune()
 	for err == nil && state != 999 {
-		state, thisChar, thisToken, err = stateTable[state](thisChar, thisToken)
+		state, thisChar, token, err = stateTable[state](thisChar, token)
 	}
 	if err == nil {
 		sourceCode.UnreadRune()
