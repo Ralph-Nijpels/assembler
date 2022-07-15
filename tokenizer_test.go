@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"testing"
 )
 
@@ -27,9 +26,10 @@ func TestAppend(t *testing.T) {
 }
 
 func TestWhiteSpace(t *testing.T) {
-	sourceCode = bytes.NewBufferString(" X")
+	sourceCode = NewSourceCode()
+	sourceCode.LoadString(" X")
 
-	thisChar, _, err := sourceCode.ReadRune()
+	thisChar, err := sourceCode.NextRune()
 	if err != nil {
 		t.Errorf(err.Error())
 	}

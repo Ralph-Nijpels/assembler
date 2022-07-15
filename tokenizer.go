@@ -58,7 +58,7 @@ type State func(thisChar rune, thisToken Token) (state int, nextChar rune, nextT
 // white_space skips over any empty stuff before anything actually happens
 func white_space(thisChar rune, thisToken Token) (state int, nextChar rune, nextToken Token, err error) {
 	if unicode.IsSpace(thisChar) {
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		return
 	}
 	nextChar = thisChar
@@ -72,81 +72,81 @@ func token_start(thisChar rune, thisToken Token) (state int, nextChar rune, next
 	// colon is a single symbol token all by itself
 	if thisChar == rune(':') {
 		nextToken.token = TK_COLON
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = 999 // end
 		return
 	}
 	// Brackets are single symbols all by themselves
 	if thisChar == rune('(') {
 		nextToken.token = TK_BRACKET_OPEN
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = 999 // end
 		return
 	}
 	if thisChar == rune(')') {
 		nextToken.token = TK_BRACKET_CLOSE
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = 999 // end
 		return
 	}
 	// Braces are single symbols all by themselves
 	if thisChar == rune('{') {
 		nextToken.token = TK_BRACE_OPEN
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = 999 // end
 		return
 	}
 	if thisChar == rune('}') {
 		nextToken.token = TK_BRACE_CLOSE
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = 999 // end
 		return
 	}
 	// Comments starts with '//'
 	if thisChar == rune('/') {
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = ST_COMMENT_START
 		return
 	}
 	// an identifier has started
 	if unicode.IsLetter(thisChar) || thisChar == rune('_') {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = ST_IDENTIFIER
 		return
 	}
 	// a negative number has started
 	if thisChar == rune('-') {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = ST_NEGATIVE
 		return
 	}
 	// a float between <0..1> has started
 	if thisChar == rune('.') {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = ST_FRACTION_START
 		return
 	}
 	// a Hexadecimal or Float number may have started
 	if thisChar == rune('0') {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = ST_NUMBER_PREFIX
 		return
 	}
 	// a number has started
 	if unicode.IsDigit(thisChar) {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = ST_NUMBER
 		return
 	}
 	// End of line is a token all by itself
 	if thisChar == rune('\n') {
 		nextToken.token = TK_END_OF_LINE
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = 999
 		return
 	}
@@ -157,7 +157,7 @@ func token_start(thisChar rune, thisToken Token) (state int, nextChar rune, next
 // comment_start checks if there is a second '/' if not, we stop
 func comment_start(thisChar rune, thisToken Token) (state int, nextChar rune, nextToken Token, err error) {
 	if thisChar == rune('/') {
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = ST_COMMENT
 		return
 	}
@@ -168,12 +168,12 @@ func comment_start(thisChar rune, thisToken Token) (state int, nextChar rune, ne
 // comment skips the content of the comment until EOLN
 func comment(thisChar rune, thisToken Token) (state int, nextChar rune, nextToken Token, err error) {
 	if thisChar != rune('\n') {
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		return
 	}
 	nextToken.value = string(thisChar)
 	nextToken.token = TK_END_OF_LINE
-	nextChar, _, err = sourceCode.ReadRune()
+	nextChar, err = sourceCode.NextRune()
 	return
 }
 
@@ -182,7 +182,7 @@ func identifier(thisChar rune, thisToken Token) (state int, nextChar rune, nextT
 	// the identifier continues
 	if unicode.IsLetter(thisChar) || unicode.IsDigit(thisChar) || thisChar == rune('_') || thisChar == rune('-') {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = ST_IDENTIFIER
 		return
 	}
@@ -198,7 +198,7 @@ func negative(thisChar rune, thisToken Token) (state int, nextChar rune, nextTok
 	// This must be a digit
 	if unicode.IsDigit(thisChar) {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = 5 // reading numbers
 		return
 	}
@@ -212,14 +212,14 @@ func number_prefix(thisChar rune, thisToken Token) (state int, nextChar rune, ne
 	// Check if it is a floating point number
 	if thisChar == rune('.') {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = 7
 		return
 	}
 	// Check if it is a hexadecimal number
 	if thisChar == rune('x') || thisChar == rune('X') {
 		nextToken.value = "" // the value is without the 0X prefix
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = 6
 		return
 	}
@@ -233,13 +233,13 @@ func number(thisChar rune, thisToken Token) (state int, nextChar rune, nextToken
 	// This must be a digit
 	if unicode.IsDigit(thisChar) {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		return
 	}
 	// Cloud be float
 	if thisChar == rune('.') {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = 7 // reading fraction
 		return
 	}
@@ -264,7 +264,7 @@ func hexadecimal(thisChar rune, thisToken Token) (state int, nextChar rune, next
 	// This must be a hexadecimal digit
 	if unicode.Is(&hexadecimals, thisChar) {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		return
 	}
 
@@ -279,7 +279,7 @@ func fraction_start(thisChar rune, thisToken Token) (state int, nextChar rune, n
 	// This must be a digit
 	if unicode.IsDigit(thisChar) {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		state = ST_FRACTION
 		return
 	}
@@ -291,7 +291,7 @@ func fraction(thisChar rune, thisToken Token) (state int, nextChar rune, nextTok
 	// This must be a digit
 	if unicode.IsDigit(thisChar) {
 		nextToken = thisToken.append(thisChar)
-		nextChar, _, err = sourceCode.ReadRune()
+		nextChar, err = sourceCode.NextRune()
 		return
 	}
 	// the float is done
@@ -319,12 +319,12 @@ func nextToken() (token Token, err error) {
 
 	state := 0
 	token = NewToken()
-	thisChar, _, err := sourceCode.ReadRune()
+	thisChar, err := sourceCode.NextRune()
 	for err == nil && state != 999 {
 		state, thisChar, token, err = stateTable[state](thisChar, token)
 	}
 	if err == nil {
-		sourceCode.UnreadRune()
+		sourceCode.PrevRune()
 	}
 
 	return
