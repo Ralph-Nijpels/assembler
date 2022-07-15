@@ -4,7 +4,8 @@ It now has several flow control operations and counting the bytes to know where 
 a variable from is getting really tedious and error phrone.
 
 # startup and options
-The initial version is very simple. Just type `asm <filename>` and it spews out the results on stdout.
+The initial version is very simple. Just type `asm <filename>` and it spews out the results on stdout. In the initial version it will just be the
+source code, nicely formatted followed by the byte code it thinks it needs to generate.
 
 # assembler features
 Each operation has to be on a seperate line. A regular line of code looks like: `<label>: <opcode> [<operant>]`. The possible opcodes can be found in the 

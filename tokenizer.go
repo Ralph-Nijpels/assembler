@@ -32,6 +32,12 @@ func (thisToken Token) append(c rune) (nextToken Token) {
 	return
 }
 
+func (thisToken Token) clear() (nextToken Token) {
+	nextToken = thisToken
+	nextToken.value = ""
+	return
+}
+
 func NewToken() (token Token) {
 	token = Token{}
 	return
@@ -51,6 +57,7 @@ const (
 	ST_HEXADECIMAL           // reading hexadecimal digits
 	ST_FRACTION_START        // reading first decimal after dot
 	ST_FRACTION              // reading next decimals after dot
+	ST_END            = 999  // Token read, all is well
 )
 
 type State func(thisChar rune, thisToken Token) (state int, nextChar rune, nextToken Token, err error)
@@ -73,33 +80,33 @@ func token_start(thisChar rune, thisToken Token) (state int, nextChar rune, next
 	if thisChar == rune(':') {
 		nextToken.token = TK_COLON
 		nextChar, err = sourceCode.NextRune()
-		state = 999 // end
+		state = ST_END
 		return
 	}
 	// Brackets are single symbols all by themselves
 	if thisChar == rune('(') {
 		nextToken.token = TK_BRACKET_OPEN
 		nextChar, err = sourceCode.NextRune()
-		state = 999 // end
+		state = ST_END
 		return
 	}
 	if thisChar == rune(')') {
 		nextToken.token = TK_BRACKET_CLOSE
 		nextChar, err = sourceCode.NextRune()
-		state = 999 // end
+		state = ST_END
 		return
 	}
 	// Braces are single symbols all by themselves
 	if thisChar == rune('{') {
 		nextToken.token = TK_BRACE_OPEN
 		nextChar, err = sourceCode.NextRune()
-		state = 999 // end
+		state = ST_END
 		return
 	}
 	if thisChar == rune('}') {
 		nextToken.token = TK_BRACE_CLOSE
 		nextChar, err = sourceCode.NextRune()
-		state = 999 // end
+		state = ST_END
 		return
 	}
 	// Comments starts with '//'
@@ -147,7 +154,7 @@ func token_start(thisChar rune, thisToken Token) (state int, nextChar rune, next
 	if thisChar == rune('\n') {
 		nextToken.token = TK_END_OF_LINE
 		nextChar, err = sourceCode.NextRune()
-		state = 999
+		state = ST_END
 		return
 	}
 	err = fmt.Errorf("unknown token")
@@ -171,7 +178,6 @@ func comment(thisChar rune, thisToken Token) (state int, nextChar rune, nextToke
 		nextChar, err = sourceCode.NextRune()
 		return
 	}
-	nextToken.value = string(thisChar)
 	nextToken.token = TK_END_OF_LINE
 	nextChar, err = sourceCode.NextRune()
 	return
