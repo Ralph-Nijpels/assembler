@@ -176,10 +176,12 @@ func comment_start(thisChar rune, thisToken Token) (state int, nextChar rune, ne
 func comment(thisChar rune, thisToken Token) (state int, nextChar rune, nextToken Token, err error) {
 	if thisChar != rune('\n') {
 		nextChar, err = sourceCode.NextRune()
+		state = ST_COMMENT
 		return
 	}
-	nextToken.token = TK_END_OF_LINE
 	nextChar, err = sourceCode.NextRune()
+	nextToken.token = TK_END_OF_LINE
+	state = ST_END
 	return
 }
 
@@ -195,7 +197,8 @@ func identifier(thisChar rune, thisToken Token) (state int, nextChar rune, nextT
 	// the identifier is done
 	nextToken.token = TK_IDENTIFIER
 	nextToken.value = thisToken.value
-	state = 999
+	nextChar = thisChar
+	state = ST_END
 	return
 }
 

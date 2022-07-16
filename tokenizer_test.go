@@ -104,7 +104,7 @@ func TestTokenStart(t *testing.T) {
 		{rune(0x04), ST_END, TK_END_OF_LINE, ""},
 	}
 
-	state := ST_WHITE_SPACE
+	state := ST_TOKEN_START
 	token := NewToken()
 	for id, c := range testCases {
 		state, thisChar, token, err = token_start(thisChar, token)
@@ -114,7 +114,89 @@ func TestTokenStart(t *testing.T) {
 
 	_, _, _, err = token_start(rune('!'), token) // unknown
 	if err == nil {
-		t.Errorf("Expected 'unknown token' error")
+		t.Errorf("Expected \"unknown token\" error")
+	}
+}
+
+func TestCommentStart(t *testing.T) {
+	sourceCode = NewSourceCode()
+	sourceCode.LoadString("/")
+
+	thisChar, err := sourceCode.NextRune()
+	if err != nil {
+		t.Errorf(err.Error())
 	}
 
+	testCases := []TokenizerCase{
+		{rune(0x04), ST_COMMENT, TK_UNKNOWN, ""}}
+
+	state := ST_COMMENT_START
+	token := NewToken()
+	for id, c := range testCases {
+		state, thisChar, token, err = comment(thisChar, token)
+		c.verifyTestCase(t, id, state, thisChar, token, err)
+		token = token.clear()
+	}
+
+	_, _, _, err = comment_start(rune('!'), token) // unknown
+	if err == nil {
+		t.Errorf("expected \"unknown token (expected '/')\" error")
+	}
+}
+
+func TestComment(t *testing.T) {
+	sourceCode = NewSourceCode()
+	sourceCode.LoadString("Aa0_-.\n")
+
+	thisChar, err := sourceCode.NextRune()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	testCases := []TokenizerCase{
+		{rune('a'), ST_COMMENT, TK_UNKNOWN, ""},
+		{rune('0'), ST_COMMENT, TK_UNKNOWN, ""},
+		{rune('_'), ST_COMMENT, TK_UNKNOWN, ""},
+		{rune('-'), ST_COMMENT, TK_UNKNOWN, ""},
+		{rune('.'), ST_COMMENT, TK_UNKNOWN, ""},
+		{rune('\n'), ST_COMMENT, TK_UNKNOWN, ""},
+		{rune(0x04), ST_END, TK_END_OF_LINE, ""}}
+
+	state := ST_COMMENT
+	token := NewToken()
+	for id, c := range testCases {
+		state, thisChar, token, err = comment(thisChar, token)
+		c.verifyTestCase(t, id, state, thisChar, token, err)
+		token = token.clear()
+	}
+}
+
+func TestIdentifier(t *testing.T) {
+	sourceCode = NewSourceCode()
+	sourceCode.LoadString("AZaz09_-!")
+
+	thisChar, err := sourceCode.NextRune()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	testCases := []TokenizerCase{
+		{rune('Z'), ST_IDENTIFIER, TK_UNKNOWN, "A"},
+		{rune('a'), ST_IDENTIFIER, TK_UNKNOWN, "Z"},
+		{rune('z'), ST_IDENTIFIER, TK_UNKNOWN, "a"},
+		{rune('0'), ST_IDENTIFIER, TK_UNKNOWN, "z"},
+		{rune('9'), ST_IDENTIFIER, TK_UNKNOWN, "0"},
+		{rune('_'), ST_IDENTIFIER, TK_UNKNOWN, "9"},
+		{rune('-'), ST_IDENTIFIER, TK_UNKNOWN, "_"},
+		{rune('!'), ST_IDENTIFIER, TK_UNKNOWN, "-"},
+		{rune('!'), ST_END, TK_IDENTIFIER, ""},
+	}
+
+	state := ST_IDENTIFIER
+	token := NewToken()
+	for id, c := range testCases {
+		state, thisChar, token, err = identifier(thisChar, token)
+		c.verifyTestCase(t, id, state, thisChar, token, err)
+		token = token.clear()
+	}
 }
