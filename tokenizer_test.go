@@ -200,3 +200,133 @@ func TestIdentifier(t *testing.T) {
 		token = token.clear()
 	}
 }
+
+func TestNegative(t *testing.T) {
+	sourceCode = NewSourceCode()
+	sourceCode.LoadString(("09"))
+
+	thisChar, err := sourceCode.NextRune()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	testCases := []TokenizerCase{
+		{rune('9'), ST_NUMBER, TK_UNKNOWN, "0"},
+		{rune(0x04), ST_NUMBER, TK_UNKNOWN, "9"},
+	}
+
+	state := ST_NEGATIVE
+	token := NewToken()
+	for id, c := range testCases {
+		state, thisChar, token, err = negative(thisChar, token)
+		c.verifyTestCase(t, id, state, thisChar, token, err)
+		token = token.clear()
+	}
+
+	_, _, _, err = negative(rune('-'), token)
+	if err == nil {
+		t.Errorf("expected \"invalid token (malformed number)\" error")
+	}
+
+	_, _, _, err = negative(rune('!'), token)
+	if err == nil {
+		t.Errorf("expected \"invalid token (malformed number)\" error")
+	}
+}
+
+func TestNumberPrefix(t *testing.T) {
+	sourceCode = NewSourceCode()
+	sourceCode.LoadString((".xX"))
+
+	thisChar, err := sourceCode.NextRune()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	testCases := []TokenizerCase{
+		{rune('x'), ST_FRACTION_START, TK_UNKNOWN, "."},
+		{rune('X'), ST_HEXADECIMAL, TK_UNKNOWN, ""},
+		{rune(0x04), ST_HEXADECIMAL, TK_UNKNOWN, ""},
+	}
+
+	state := ST_NUMBER_PREFIX
+	token := NewToken()
+	for id, c := range testCases {
+		state, thisChar, token, err = number_prefix(thisChar, token)
+		c.verifyTestCase(t, id, state, thisChar, token, err)
+		token = token.clear()
+	}
+
+	_, _, _, err = number_prefix(rune('-'), token)
+	if err == nil {
+		t.Errorf("expected \"invalid token (malformed number)\" error")
+	}
+
+	_, _, _, err = number_prefix(rune('!'), token)
+	if err == nil {
+		t.Errorf("expected \"invalid token (malformed number)\" error")
+	}
+}
+
+func TestNumber(t *testing.T) {
+	sourceCode = NewSourceCode()
+	sourceCode.LoadString(("09.!"))
+
+	thisChar, err := sourceCode.NextRune()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	testCases := []TokenizerCase{
+		{rune('9'), ST_NUMBER, TK_UNKNOWN, "0"},
+		{rune('.'), ST_NUMBER, TK_UNKNOWN, "9"},
+		{rune('!'), ST_FRACTION_START, TK_UNKNOWN, "."},
+		{rune('!'), ST_END, TK_INTEGER, ""},
+	}
+
+	state := ST_NUMBER
+	token := NewToken()
+	for id, c := range testCases {
+		state, thisChar, token, err = number(thisChar, token)
+		c.verifyTestCase(t, id, state, thisChar, token, err)
+		token = token.clear()
+	}
+}
+
+func TestHexadecimal(t *testing.T) {
+	sourceCode = NewSourceCode()
+	sourceCode.LoadString(("09afAF!"))
+
+	thisChar, err := sourceCode.NextRune()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	testCases := []TokenizerCase{
+		{rune('9'), ST_HEXADECIMAL, TK_UNKNOWN, "0"},
+		{rune('a'), ST_HEXADECIMAL, TK_UNKNOWN, "9"},
+		{rune('f'), ST_HEXADECIMAL, TK_UNKNOWN, "a"},
+		{rune('A'), ST_HEXADECIMAL, TK_UNKNOWN, "f"},
+		{rune('F'), ST_HEXADECIMAL, TK_UNKNOWN, "A"},
+		{rune('!'), ST_HEXADECIMAL, TK_UNKNOWN, "F"},
+		{rune('!'), ST_END, TK_HEXADECIMAL, ""},
+	}
+
+	state := ST_HEXADECIMAL
+	token := NewToken()
+	for id, c := range testCases {
+		state, thisChar, token, err = hexadecimal(thisChar, token)
+		c.verifyTestCase(t, id, state, thisChar, token, err)
+		token = token.clear()
+	}
+
+	testCase := TokenizerCase{rune('g'), ST_END, TK_HEXADECIMAL, ""}
+	state, thisChar, token, err = hexadecimal(rune('g'), token)
+	testCase.verifyTestCase(t, -1, state, thisChar, token, err)
+	token.clear()
+
+	testCase = TokenizerCase{rune('G'), ST_END, TK_HEXADECIMAL, ""}
+	state, thisChar, token, err = hexadecimal(rune('G'), token)
+	testCase.verifyTestCase(t, -1, state, thisChar, token, err)
+	token.clear()
+}

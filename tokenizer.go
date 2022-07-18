@@ -208,7 +208,7 @@ func negative(thisChar rune, thisToken Token) (state int, nextChar rune, nextTok
 	if unicode.IsDigit(thisChar) {
 		nextToken = thisToken.append(thisChar)
 		nextChar, err = sourceCode.NextRune()
-		state = 5 // reading numbers
+		state = ST_NUMBER
 		return
 	}
 	// oops
@@ -222,14 +222,14 @@ func number_prefix(thisChar rune, thisToken Token) (state int, nextChar rune, ne
 	if thisChar == rune('.') {
 		nextToken = thisToken.append(thisChar)
 		nextChar, err = sourceCode.NextRune()
-		state = 7
+		state = ST_FRACTION_START
 		return
 	}
 	// Check if it is a hexadecimal number
 	if thisChar == rune('x') || thisChar == rune('X') {
 		nextToken.value = "" // the value is without the 0X prefix
 		nextChar, err = sourceCode.NextRune()
-		state = 6
+		state = ST_HEXADECIMAL
 		return
 	}
 	// oops
@@ -243,19 +243,21 @@ func number(thisChar rune, thisToken Token) (state int, nextChar rune, nextToken
 	if unicode.IsDigit(thisChar) {
 		nextToken = thisToken.append(thisChar)
 		nextChar, err = sourceCode.NextRune()
+		state = ST_NUMBER
 		return
 	}
 	// Cloud be float
 	if thisChar == rune('.') {
 		nextToken = thisToken.append(thisChar)
 		nextChar, err = sourceCode.NextRune()
-		state = 7 // reading fraction
+		state = ST_FRACTION_START
 		return
 	}
 	// the number is done
 	nextToken.token = TK_INTEGER
 	nextToken.value = thisToken.value
-	state = 999
+	nextChar = thisChar
+	state = ST_END
 	return
 }
 
@@ -274,13 +276,15 @@ func hexadecimal(thisChar rune, thisToken Token) (state int, nextChar rune, next
 	if unicode.Is(&hexadecimals, thisChar) {
 		nextToken = thisToken.append(thisChar)
 		nextChar, err = sourceCode.NextRune()
+		state = ST_HEXADECIMAL
 		return
 	}
 
 	// hexadecimal is done
 	nextToken.token = TK_HEXADECIMAL
 	nextToken.value = thisToken.value
-	state = 999
+	nextChar = thisChar
+	state = ST_END
 	return
 }
 
