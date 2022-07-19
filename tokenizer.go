@@ -162,7 +162,7 @@ func token_start(thisChar rune, thisToken Token) (state int, nextChar rune, next
 }
 
 // comment_start checks if there is a second '/' if not, we stop
-func comment_start(thisChar rune, thisToken Token) (state int, nextChar rune, nextToken Token, err error) {
+func comment_start(thisChar rune, _ Token) (state int, nextChar rune, nextToken Token, err error) {
 	if thisChar == rune('/') {
 		nextChar, err = sourceCode.NextRune()
 		state = ST_COMMENT
@@ -173,7 +173,7 @@ func comment_start(thisChar rune, thisToken Token) (state int, nextChar rune, ne
 }
 
 // comment skips the content of the comment until EOLN
-func comment(thisChar rune, thisToken Token) (state int, nextChar rune, nextToken Token, err error) {
+func comment(thisChar rune, _ Token) (state int, nextChar rune, nextToken Token, err error) {
 	if thisChar != rune('\n') {
 		nextChar, err = sourceCode.NextRune()
 		state = ST_COMMENT
@@ -232,8 +232,11 @@ func number_prefix(thisChar rune, thisToken Token) (state int, nextChar rune, ne
 		state = ST_HEXADECIMAL
 		return
 	}
-	// oops
-	err = fmt.Errorf("invalid token (malformed number)")
+	// It's just a 0, the number is done
+	nextToken.token = TK_INTEGER
+	nextToken.value = thisToken.value
+	nextChar = thisChar
+	state = ST_END
 	return
 }
 
@@ -305,12 +308,14 @@ func fraction(thisChar rune, thisToken Token) (state int, nextChar rune, nextTok
 	if unicode.IsDigit(thisChar) {
 		nextToken = thisToken.append(thisChar)
 		nextChar, err = sourceCode.NextRune()
+		state = ST_FRACTION
 		return
 	}
 	// the float is done
 	nextToken.token = TK_FLOAT
 	nextToken.value = thisToken.value
-	state = 999
+	nextChar = thisChar
+	state = ST_END
 	return
 }
 
@@ -333,7 +338,7 @@ func nextToken() (token Token, err error) {
 	state := 0
 	token = NewToken()
 	thisChar, err := sourceCode.NextRune()
-	for err == nil && state != 999 {
+	for err == nil && state != ST_END {
 		state, thisChar, token, err = stateTable[state](thisChar, token)
 	}
 	if err == nil {
